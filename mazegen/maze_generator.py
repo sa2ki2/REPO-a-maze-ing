@@ -51,6 +51,32 @@ class Config(BaseModel):
                 ) from error
         return v
 
+    @field_validator("PERFECT", mode="before")
+    @classmethod
+    def parse_perfect(cls, value: Any) -> bool:
+        """
+        PERFECTをTrueまたはFalseだけに変換する。
+
+        Pydanticが行う0、1などの数値から真偽値への自動変換を防ぎ、
+        設定ファイルでは明示的な真偽値だけを受け付ける。
+
+        Args:
+            value (Any): 検証対象のPERFECT値。
+
+        Returns:
+            bool: 変換後の真偽値。
+
+        Raises:
+            ValueError: TrueまたはFalseとして解釈できない場合。
+        """
+        if isinstance(value, bool):
+            return value
+        if value == "True":
+            return True
+        if value == "False":
+            return False
+        raise ValueError("must be exactly True or False")
+
     @model_validator(mode='after')
     def check_entry_and_exit(self) -> "Config":
         """
