@@ -2,7 +2,9 @@
 
 from abc import ABC, abstractmethod
 from typing import Any
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel, ConfigDict, Field, field_validator, model_validator
+)
 import sys
 import random
 
@@ -13,6 +15,7 @@ class Config(BaseModel):
 
     各KEYに対するVALUEにそれぞれ条件をつけてvalidationを行う
     """
+    model_config = ConfigDict(extra="forbid")
     WIDTH: int = Field(ge=3)
     HEIGHT: int = Field(ge=3)
     ENTRY: tuple[int, int]
@@ -51,8 +54,17 @@ class Config(BaseModel):
             Any: 変換済みのタプル、または元の値。
         """
         if isinstance(v, str):
-            x, y = v.split(",")
-            return (int(x), int(y))
+            values = v.split(",")
+            if len(values) != 2:
+                raise ValueError(
+                    "must contain exactly two comma-separated integers (x,y)"
+                )
+            try:
+                return (int(values[0]), int(values[1]))
+            except ValueError as error:
+                raise ValueError(
+                    "must contain two integers (x,y)"
+                ) from error
         return v
 
     @model_validator(mode='after')
@@ -324,7 +336,6 @@ class MazeGeneratorBasic(ABC):
         if (x > 0 and value & 1 == 1 and
                 not self._pos[x - 1][y].is_42):
             cardinals.append("W")
-
         if not cardinals:
             return False
 

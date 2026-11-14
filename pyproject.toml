@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "mazegen"
 version = "1.0.0"
 authors = [
-  { name="tsugimot", email="tsugimot@student.42tokyo.jp" },
-  { name="aiwane", email="aiwane@student.42tokyo.jp"}
+  { name="skurita", email="skurita@student.42tokyo.jp" },
+  { name="sozawa", email="sozawa@student.42tokyo.jp"}
 ]
 description = "A-Maze-ing maze generator module"
 readme = "README.md"

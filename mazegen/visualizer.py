@@ -111,7 +111,7 @@ class Visualizer:
         for x in range(self._config.WIDTH):
             for y in range(self._config.HEIGHT):
                 self.make_42_start_goal_min(x, y)
-    
+
     def make_road(self, x: int, y: int) -> None:
         """
         指定された座標を道としてマークする。
@@ -312,7 +312,7 @@ class Visualizer:
             print("4. Show maze generate animation")
             print("5. Show bfs animation")
             print("6. Quit")
-            choice = input("Choice? (1-4): ")
+            choice = input("Choice? (1-6): ")
             if choice.isdecimal() and int(choice) == 1:
                 maze: MazeGeneratorBasic
                 if self._config.STRATEGY == "recursive":
@@ -324,7 +324,7 @@ class Visualizer:
                 maze.maze_gen()
                 bfs = BreadthFirstSearch(maze._pos, maze._config)
                 bfs.search_maze()
-                maze.output_to_file(bfs._path_cardinal) #test
+                maze.output_to_file(bfs._path_cardinal)
                 self._pos = maze._pos
                 self._path = bfs._path
                 self._history = maze._history

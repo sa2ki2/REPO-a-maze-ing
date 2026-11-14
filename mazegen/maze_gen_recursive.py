@@ -24,9 +24,7 @@ class MazeGenerator(MazeGeneratorBasic):
             self.backtrack(start)
             if not self._config.PERFECT:
                 self.make_non_complete_maze()
-                if not self.check_big_space():
-                    return
-            else:
+            if not self.check_big_space():
                 return
 
     def backtrack(self, start: tuple[int, int]) -> None:
