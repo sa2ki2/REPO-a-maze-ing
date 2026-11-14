@@ -1,45 +1,49 @@
+*This project has been created as part
+of the 42 curriculum by skurita, sozawa*
+
 # A-Maze-ing
 
-## Description
+42 Tokyoの課題「A-Maze-ing」の迷路生成プログラムです。迷路を生成し、
+入口から出口までの最短経路を求め、ターミナル上で表示します。
 
-A-Maze-ingは42cursus Milestone 2の迷路生成課題です。迷路の生成、最短経路の導出、ターミナル上でのビジュアライズを行います。
+## Features
 
-- 迷路生成: recursive backtrackerによる深さ優先探索（DFS）
-- 最短経路: 幅優先探索（BFS）
-- 表示: ANSIエスケープシーケンスを利用したASCII rendering
-- 製作者: skurita、sozawa
+- recursive backtracker（深さ優先探索、DFS）による迷路生成
+- BFSによる入口から出口までの最短経路探索
+- `PERFECT=True` の完全迷路と、ループを持つ `PERFECT=False` の迷路
+- `PERFECT=False` での四隅・中央の開通と、実際の行き止まり0の迷路生成
+- 迷路が十分な大きさの場合の中央の `42` パターン表示
+- ANSIエスケープシーケンスによるターミナル表示
+- 迷路生成アニメーション、最短経路表示、壁色変更
+- 42課題仕様の16進数形式でのファイル出力
+- 生成済み迷路の整合性・到達可能性・ループ・行き止まりの解析
 
-`PERFECT=True`では完全迷路を生成します。`PERFECT=False`では、ループを持ち、dead-endが存在しないbraided mazeを生成します。
+`42` パターン内の完全に閉じた装飾セルは、到達可能でなくてもよいものとして
+扱います。迷路のプレイ可能な通路は入口から出口まで到達可能である必要があります。
 
 ## Requirements
 
-### Mandatory
+- Python 3.10以上
+- `pydantic`
+- `build`（wheelのビルドに使用）
 
-1. `config.txt`で迷路の幅、高さ、入口、出口などを指定できる。
-2. `SEED`によって同じ迷路を再現できる。
-3. 各セルは東西南北の壁を0から4個持つ。
-4. 入口と出口は異なり、迷路内に存在する。
-5. 3 x 3以上のオープンスペースを作らない。
-6. 十分なサイズの迷路では中央に42のパターンを表示する。
-7. `PERFECT=True`では任意の2点間の経路が1つになる。
-8. `PERFECT=False`では42パターン内部の閉じた装飾セルを除く全通路が到達可能で、四隅と中央が開いており、複数の経路を持つ。
-9. 迷路が小さく42を配置できない場合は、その旨を表示する。
-10. 課題仕様の16進数形式で迷路をファイルへ出力する。
-11. ASCII renderingで迷路を表示する。
-12. Python wheelパッケージとしてビルドできる。
-
-### Bonus
-
-- `PERFECT=False`の迷路をdead-end 0のbraided boardとして生成する。
-- 迷路生成のアニメーションを表示する。
+依存関係は `requirements.txt` に固定されています。
 
 ## Usage
+
+### 迷路の生成
 
 ```bash
 make run
 ```
 
-デフォルトの`config.txt`は次の設定です。
+`make run` は `.venv` を作成し、依存関係をインストールした後、次を実行します。
+
+```bash
+python3 a_maze_ing.py config.txt
+```
+
+設定ファイルは `KEY=VALUE` 形式です。現在のデフォルト設定は次のとおりです。
 
 ```text
 WIDTH=20
@@ -51,81 +55,74 @@ PERFECT=False
 SEED=42
 ```
 
-実行後のメニューでは、次の操作を選択できます。
+`SEED` は任意です。省略した場合は `42` が使用されます。
 
-1. 迷路を再生成する
-2. 最短経路の表示・非表示を切り替える
-3. 壁の色を変更する
-4. 迷路生成アニメーションを表示する
-5. 終了する
+生成後はインタラクティブメニューから次を選択できます。
 
-生成した迷路は、次のコマンドで解析できます。
+1. 迷路を再生成
+2. 最短経路の表示・非表示
+3. 壁色の変更
+4. 迷路生成アニメーション
+5. 終了
+
+### 迷路の解析
 
 ```bash
 make analyze
 make analyze-bonus
 ```
 
-`make analyze-bonus`は、解析スクリプトを`--max-dead-ends 0`で実行し、braided boardの条件を確認します。
-
-### Configuration errors
-
-`config.txt`に問題がある場合は、処理を開始せず、行番号付きのエラーをstderrへ表示して終了します。次のような入力を検出します。
-
-- `KEY=VALUE`形式でない行
-- 未知のキー、重複したキー、空の値
-- 数値・真偽値・座標の形式不正
-- `PERFECT`に大文字小文字を含めて厳密に`True`または`False`以外を指定
-- 必須キー（`WIDTH`、`HEIGHT`、`ENTRY`、`EXIT`、`OUTPUT_FILE`、`PERFECT`）の欠落
-- `WIDTH`と`HEIGHT`の範囲外
-- 迷路の範囲外にあるEntry / Exit
-- EntryとExitが同じ座標
-
-例:
-
-```text
-Config error:
-line 3: ENTRY: must contain exactly two comma-separated integers (x,y)
-```
-
-## Algorithms
-
-### Maze generation
-
-recursive backtrackerは、現在のセルから未訪問の隣接セルを選び、壁を壊して移動します。進めるセルがなくなった場合は、親セルへ戻って探索を続けます。全セルを訪問するまでこの処理を繰り返すため、DFSとして動作します。
-
-生成直後の迷路は木構造です。`PERFECT=False`の場合は、四隅と中央を開けた後、dead-endがなくなるまで壁を追加で壊します。これにより、追跡中にプレイヤーが行き止まりへ閉じ込められないbraided mazeになります。42パターン内部の閉じた装飾セルは到達可能でなくてもよいものとして扱います。
-
-### Shortest path
-
-BFSで入口から出口まで探索し、各セルの親を記録します。出口へ到達した後、親を逆にたどることで最短経路を復元します。
-
-### Maze output
-
-迷路内部では、壁を次のビットで管理します。
-
-| Bit | Direction |
-| --- | --- |
-| 0 | North |
-| 1 | East |
-| 2 | South |
-| 3 | West |
-
-出力時には課題仕様のビット順へ変換し、迷路本体、空行、入口座標、出口座標、経路の方角文字列を順に書き込みます。
-
-## Visualization
-
-ANSIエスケープシーケンスで壁、通路、入口、出口、42、最短経路に色を付けます。迷路生成アニメーションでは、壁を壊した履歴を順番に再生します。
-
-## Packaging
-
-wheelをビルドするには次を実行します。
+`make analyze` は `maze.txt` を解析します。`make analyze-bonus` は
+`--max-dead-ends 0` を指定し、行き止まりがないことも確認します。
+直接実行する場合は次の形式です。
 
 ```bash
-make review
+python3 maze_analyzer.py maze.txt [--min-loops N] [--max-dead-ends N]
 ```
 
-別のプロジェクトから利用する場合は、次のようにインポートできます。
+### 設定エラー
+
+設定ファイルに問題がある場合、迷路生成を開始せず、行番号付きのエラーを
+標準エラー出力へ表示して終了します。次の入力を検証します。
+
+- `KEY=VALUE` 形式、未知のキー、重複したキー、空の値
+- 必須キー（`WIDTH`、`HEIGHT`、`ENTRY`、`EXIT`、`OUTPUT_FILE`、`PERFECT`）
+- 数値・座標・真偽値の形式
+- `WIDTH`、`HEIGHT`、`ENTRY`、`EXIT` の範囲
+- `ENTRY` と `EXIT` が異なること
+
+`PERFECT` に指定できる値は大文字小文字を含めて `True` または `False` だけです。
+
+## Output format
+
+`OUTPUT_FILE` には、次の順で出力されます。
+
+1. 迷路本体（各セル1文字の16進数、`HEIGHT` 行）
+2. 空行
+3. 入口座標（`x,y`）
+4. 出口座標（`x,y`）
+5. 最短経路の方角文字列
+
+迷路内部では壁を `N=8`、`E=4`、`S=2`、`W=1` のビットで管理し、出力時に
+課題仕様のビット順へ変換します。
+
+## Packaging and checks
+
+```bash
+make lint          # flake8とmypy
+make lint-strict   # strict設定のflake8とmypy
+make review        # wheelをビルドし、別環境へインストールして実行
+```
+
+wheelだけをビルドする場合は次を実行します。
+
+```bash
+python3 -m build
+```
+
+## Python API
+
+`mazegen` パッケージから設定、生成器、ビジュアライザーを利用できます。
 
 ```python
 from mazegen import Config, MazeGenerator
@@ -137,6 +134,7 @@ config = Config(
     EXIT=(19, 14),
     OUTPUT_FILE="maze.txt",
     PERFECT=False,
+    SEED=42,
 )
 
 maze = MazeGenerator(config)
@@ -146,23 +144,32 @@ maze.maze_gen()
 ## Project structure
 
 ```text
-a-maze-ing
-├── a_maze_ing.py
-├── config.txt
-├── maze_analyzer.py
-├── mazegen
+.
+├── a_maze_ing.py             # メインエントリーポイント
+├── config.txt                # 迷路設定のサンプル
+├── maze_analyzer.py          # 出力ファイルの解析
+├── mazegen/
 │   ├── __init__.py
-│   ├── bfs.py
-│   ├── maze_gen_recursive.py
-│   ├── maze_generator.py
-│   └── visualizer.py
+│   ├── bfs.py                # 最短経路探索
+│   ├── maze_gen_recursive.py # recursive backtracker
+│   ├── maze_generator.py     # 設定・共通処理・出力
+│   └── visualizer.py         # ターミナル表示
 ├── Makefile
 ├── pyproject.toml
+├── requirements.txt
 └── README.md
 ```
 
-## Resources
 
-- [Jamis Buck - Maze algorithms](https://www.jamisbuck.org/mazes/)
+
+## 参考資料
+
+- [Jamis Buck - 迷路アルゴリズム](https://www.jamisbuck.org/mazes/)
 - [深さ優先探索、幅優先探索の解説](https://manabitimes.jp/math/1247)
 - [ANSIエスケープシーケンスの解説](https://docsaid.org/ja/blog/colorful-cli-with-ansi-escape-codes/)
+
+## AIの利用
+
+調査、コードレビュー、デバッグ、ドキュメント作成の補助としてAIツールを
+使用しました。AIによる提案は作者が確認・修正・テストしたうえで採用しており、
+最終的な実装については作者が責任を負います。
