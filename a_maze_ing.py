@@ -10,20 +10,23 @@ from mazegen.visualizer import Visualizer
 
 
 class ConfigFileError(ValueError):
-    """Raised when config.txt cannot be parsed or validated."""
+    """config.txtを解析または検証できない場合に発生する設定エラー。"""
 
 
 def parse_config() -> Config:
     """
-    config.txtのパースを行う。
+    コマンドラインで指定された設定ファイルを読み込み、検証する。
 
-    config.txtを読み取り、Configにして返す。
+    空行とコメントを無視しながらKEY=VALUE形式を解析し、未知のキー、
+    重複キー、空値、型、座標、範囲のエラーを行番号付きで報告できる
+    Configオブジェクトに変換する。
 
     Returns:
         Config: パースされた設定オブジェクト。
 
     Raises:
-        Exception: コマンドライン引数が不足している場合。
+        ConfigFileError: 引数不足、ファイル読み込み失敗、設定形式不正、
+            またはConfigの検証失敗の場合。
     """
     if len(sys.argv) < 2:
         raise ConfigFileError(
@@ -49,6 +52,9 @@ def parse_config() -> Config:
 
     allowed_keys = {
         "WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE", "PERFECT", "SEED"
+    }
+    required_keys = {
+        "WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE", "PERFECT"
     }
     pairs: dict[str, Any] = {}
     line_numbers: dict[str, int] = {}
@@ -87,6 +93,13 @@ def parse_config() -> Config:
         pairs[key] = value
         line_numbers[key] = line_number
 
+    missing_keys = sorted(required_keys - pairs.keys())
+    if missing_keys:
+        missing = ", ".join(missing_keys)
+        raise ConfigFileError(
+            f"required configuration key(s) missing: {missing}"
+        )
+
     try:
         return Config.model_validate(pairs)
     except ValidationError as error:
@@ -106,9 +119,11 @@ def parse_config() -> Config:
 
 def main() -> None:
     """
-    main関数
+    迷路生成プログラムのエントリーポイント。
 
-    DFS（recursive backtracker）で迷路を生成する
+    設定を読み込み、DFS（recursive backtracker）で迷路を生成し、
+    BFSで入口から出口までの最短経路を求め、ファイル出力後に
+    ターミナルビジュアライザーを起動する。
     """
     if len(sys.argv) < 2:
         print("Usage: python3 a_maze_ing.py config.txt")
@@ -134,7 +149,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    # try:
     main()
-    # except BaseException as e:
-    #     print(f"[Error]{e}")

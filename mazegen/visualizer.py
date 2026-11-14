@@ -83,7 +83,10 @@ class Visualizer:
 
     def visualize(self) -> None:
         """
-        迷路を2次元配列上でビジュアライズするための準備を行う。
+        迷路の壁、通路、経路、42、入口、出口を描画用配列へ反映する。
+
+        現在の壁色と表示設定を使って配列を毎回作り直すため、壁色や
+        最短経路の表示状態を変更した後の再描画にも利用できる。
         """
         self._visual = [
             [
@@ -179,7 +182,10 @@ class Visualizer:
 
     def show_simple(self) -> None:
         """
-        ターミナル上に迷路を表示する。
+        現在の描画用配列をターミナルへ出力する。
+
+        この関数は迷路データを変更せず、visualize()で作成された表示内容
+        を行単位で表示する。
         """
         for y in range(self._config.HEIGHT * 2 + 1):
             for x in range(self._config.WIDTH * 2 + 1):
@@ -190,7 +196,9 @@ class Visualizer:
 
     def show_animation(self) -> None:
         """
-        迷路生成のアニメーションを表示する。
+        壁を壊した履歴を順番に再生して迷路生成をアニメーション表示する。
+
+        再生中は最短経路を一時的に隠し、終了後に元の迷路と表示設定へ戻す。
         """
         if not self._history:
             print("No history of breaking wall")
@@ -297,7 +305,10 @@ class Visualizer:
 
     def change_color(self) -> None:
         """
-        壁の色を順番にローテーションして切り替える。
+        壁の色を定義済みのANSIカラーの順番に切り替える。
+
+        次回のvisualize()で新しい色が壁へ反映される。通路、42、入口、
+        出口、最短経路の色はこの処理では変更しない。
         """
         val = self._wall_color.value
 

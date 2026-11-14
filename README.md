@@ -75,6 +75,7 @@ make analyze-bonus
 - `KEY=VALUE`形式でない行
 - 未知のキー、重複したキー、空の値
 - 数値・真偽値・座標の形式不正
+- 必須キー（`WIDTH`、`HEIGHT`、`ENTRY`、`EXIT`、`OUTPUT_FILE`、`PERFECT`）の欠落
 - `WIDTH`と`HEIGHT`の範囲外
 - 迷路の範囲外にあるEntry / Exit
 - EntryとExitが同じ座標
