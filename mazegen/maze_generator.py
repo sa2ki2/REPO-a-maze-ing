@@ -5,7 +5,6 @@ from typing import Any
 from pydantic import (
     BaseModel, ConfigDict, Field, field_validator, model_validator
 )
-import sys
 import random
 
 
@@ -23,21 +22,6 @@ class Config(BaseModel):
     OUTPUT_FILE: str
     PERFECT: bool = Field(default=False)
     SEED: int = Field(default=42)
-    STRATEGY: str = Field(default="recursive")
-
-    @field_validator("STRATEGY")
-    @classmethod
-    def validate_strategy(cls, value: str) -> str:
-        """
-        STRATEGYの不正な入力検知 3つのアルゴリズムのみ適用
-        """
-        allowed = ("recursive", "prims", "kruskals")
-        if value not in allowed:
-            raise ValueError(
-                f"Invalid STRATEGY: {value}. "
-                f"Choose from: {', '.join(allowed)}"
-            )
-        return value
 
     @field_validator("ENTRY", "EXIT", mode="before")
     @classmethod
@@ -117,7 +101,6 @@ class MazeGeneratorBasic(ABC):
     _config: Config
     _pos: list[list[Cell]]
     _parent: dict[tuple[int, int], tuple[int, int] | None]
-    _bonus: bool
     _history: list[tuple[tuple[int, int], str]]
     _exist_42: bool
 
@@ -144,7 +127,6 @@ class MazeGeneratorBasic(ABC):
         self._exist_42 = False
         self.make_42_pattern()
         self._parent = {}
-        self._bonus = False
         self._history = []
 
     def maze_show(self) -> None:
@@ -288,19 +270,12 @@ class MazeGeneratorBasic(ABC):
         """
         不要な行き止まりを破壊して、不完全な（ループのある）迷路を生成する。
         """
-        if len(sys.argv) == 4 and sys.argv[2] == "--max-dead-ends":
-            max_dead_end = int(sys.argv[3])
-            keep_dead_end = self.pick_dead_end_to_keep(max_dead_end)
-        else:
-            keep_dead_end = []
         self.break_center_and_corners()
         changed = True
         while changed:
             changed = False
             for x in range(self._config.WIDTH):
                 for y in range(self._config.HEIGHT):
-                    if (x, y) in keep_dead_end:
-                        continue
                     if self.break_dead_end(x, y):
                         changed = True
 
@@ -315,9 +290,6 @@ class MazeGeneratorBasic(ABC):
         Returns:
             bool: 壁を破壊した場合はTrue、そうでなければFalse。
         """
-        if self._pos[x][y].is_42:
-            return False
-
         value = self._pos[x][y].value
         open_count = 4 - bin(value).count("1")
         if open_count != 1:
@@ -342,37 +314,6 @@ class MazeGeneratorBasic(ABC):
         cardinal = random.choice(cardinals)
         self.break_wall((x, y), str(cardinal))
         return True
-
-    def pick_dead_end_to_keep(
-        self, max_dead_end: int
-    ) -> list[tuple[int, int]]:
-        """
-        残しておく行き止まりのセルをランダムに選択する。
-
-        Args:
-            max_dead_end (int): 残す行き止まりの最大数。
-
-        Returns:
-            list[tuple[int, int]]: 残す行き止まりの座標のリスト。
-        """
-        if max_dead_end <= 0:
-            return []
-
-        candidates = []
-        for x in range(self._config.WIDTH):
-            for y in range(self._config.HEIGHT):
-                if self._pos[x][y].is_42:
-                    continue
-                open_count = 4 - bin(self._pos[x][y].value).count("1")
-                if open_count == 1:
-                    candidates.append((x, y))
-        if not candidates:
-            return []
-
-        pick_count = min(len(candidates), max_dead_end)
-
-        index = random.sample(range(len(candidates)), pick_count)
-        return [candidates[int(i)] for i in index]
 
     def check_big_space(self) -> bool:
         """

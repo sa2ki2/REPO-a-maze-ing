@@ -117,12 +117,37 @@ perfect/non-perfectモード、任意のシードを指定します。
 
 Pythonパッケージ、そのメタデータ、必要なPythonバージョン、ビルドと使用に
 必要な依存関係を記述します。
-]review: $(VENV) install
-	$(PYTHON) -m build
-	mkdir review
-	cp dist/mazegen-1.0.0-py3-none-any.whl review/
-	cp a_maze_ing.py review/
-	cp config.txt review/
-	python3 -m venv review/.venv
-	review/.venv/bin/pip install review/mazegen-1.0.0-py3-none-any.whl
-	review/.venv/bin/python3 review/a_maze_ing.py review/config.txt
+
+## 単一ストラテジー化後の不要コード確認
+
+### 削除したもの
+
+- `mazegen/maze_gen_prims.py`: DFS以外のPrim法実装のため削除しました。
+- `mazegen/maze_gen_kruskals.py`: DFS以外のKruskal法実装のため削除しました。
+- `Config.STRATEGY`: 生成方式を選択する設定は不要なため削除しました。
+- `MazeGeneratorBasic.pick_dead_end_to_keep`: `--max-dead-ends`指定時だけ
+  行き止まりを残す処理は、常にdead-end 0を目指す要件と矛盾するため削除しました。
+- `BreadthFirstSearch._history_bfs`と`Visualizer.show_bfs_animation`:
+  ボーナス対象ではないBFS探索アニメーションを削除しました。
+- Prim法・Kruskal法のimport、公開API、Visualizerの戦略分岐とメニュー項目を
+  削除しました。
+
+### 残したもの
+
+- `mazegen/maze_gen_recursive.py`のrecursive backtrackerは、唯一の生成戦略として
+  残しています。
+- `mazegen/bfs.py`のBFSは、課題必須の入口から出口までの最短経路計算に必要なため
+  残しています。
+- `MazeGeneratorBasic`の壁操作、42パターン、non-perfect化、出力処理はDFSと
+  BFSの両方から利用される共通処理のため残しています。
+- Visualizerの迷路生成アニメーション、最短経路表示、再生成、色変更はREADMEに
+  記載した機能として残しています。
+
+### 変更後の検証
+
+- `py_compile`、flake8、mypy、`git diff --check`に成功しました。
+- 標準設定での実行に成功し、出力迷路を`maze_analyzer.py --max-dead-ends 0`で
+  検査して、実際の行き止まり0件、壁整合性OK、入口から出口まで到達可能である
+  ことを確認しました。
+- ソースとREADMEを検索し、Prim法、Kruskal法、`STRATEGY`、BFSアニメーションの
+  実装参照が残っていないことを確認しました。

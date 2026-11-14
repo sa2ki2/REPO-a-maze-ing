@@ -13,7 +13,6 @@ class BreadthFirstSearch:
     _config: Config
     _path: list[tuple[int, int]]
     _path_cardinal: str
-    _history_bfs: list[tuple[tuple[int, int], tuple[int, int] | None]]
 
     def __init__(self, pos: list[list[Cell]], config: Config) -> None:
         """
@@ -27,7 +26,6 @@ class BreadthFirstSearch:
         self._config = config
         self._path = []
         self._path_cardinal = ""
-        self._history_bfs = []
 
     def search_maze(self) -> None:
         """
@@ -52,7 +50,6 @@ class BreadthFirstSearch:
                 self._path_cardinal = self.make_path_cardinal(path)
                 # self.show(self._path_cardinal)
                 return
-            self._history_bfs.append(((x, y), parent[(x, y)]))
             cardinals = self.get_passible_cardinals(x, y)
             if not cardinals:
                 continue

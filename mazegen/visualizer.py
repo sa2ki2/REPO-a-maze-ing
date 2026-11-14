@@ -1,8 +1,6 @@
 from enum import Enum
 from mazegen.maze_generator import Config, Cell, MazeGeneratorBasic
 from mazegen.maze_gen_recursive import MazeGenerator
-from mazegen.maze_gen_prims import MazeGeneratorPrims
-from mazegen.maze_gen_kruskals import MazeGeneratorKruskals
 from mazegen.bfs import BreadthFirstSearch
 import os
 import time
@@ -55,14 +53,12 @@ class Visualizer:
     _show_path: bool
     _visual: list[list[str]]
     _history: list[tuple[tuple[int, int], str]]
-    _history_bfs: list[tuple[tuple[int, int], tuple[int, int] | None]]
     _exist_42: bool
 
     def __init__(
         self, pos: list[list[Cell]],
         config: Config, path: list[tuple[int, int]],
         history: list[tuple[tuple[int, int], str]],
-        history_bfs: list[tuple[tuple[int, int], tuple[int, int] | None]],
         exist_42: bool
     ) -> None:
         """
@@ -74,8 +70,6 @@ class Visualizer:
             path (list[tuple[int, int]]): 最短経路の座標リスト。
             history (list[tuple[tuple[int, int], str]]):
             迷路生成時、生成していった順番に履歴のリスト
-            history_bfs (list[tuple(int, int)]):
-            BFS時、探索した履歴のリスト
             exist_42 (bool): 42パターンが存在するか否か
         """
         self._pos = pos
@@ -85,7 +79,6 @@ class Visualizer:
         self._show_path = False
         self._visual = []
         self._history = history
-        self._history_bfs = history_bfs
         self._exist_42 = exist_42
 
     def visualize(self) -> None:
@@ -263,41 +256,6 @@ class Visualizer:
             pos[x][y].value -= 1
             pos[x - 1][y].value -= 4
 
-    def show_bfs_animation(self) -> None:
-        """
-        bfsのアニメーションを表示する。
-        """
-        if not self._history_bfs:
-            return
-
-        self._show_path = False
-        self.visualize()
-
-        total = len(self._history_bfs)
-        for i in range(len(self._history_bfs)):
-            cur, prev = self._history_bfs[i]
-            x_cur, y_cur = cur
-            gray = str(Color.GRAY.value)
-            if prev is not None:
-                x_prev, y_prev = prev
-                if x_cur > x_prev:
-                    self._visual[x_cur * 2][y_cur * 2 + 1] = gray
-                elif x_cur < x_prev:
-                    self._visual[x_cur * 2 + 2][y_cur * 2 + 1] = gray
-                elif y_cur > y_prev:
-                    self._visual[x_cur * 2 + 1][y_cur * 2] = gray
-                elif y_cur < y_prev:
-                    self._visual[x_cur * 2 + 1][y_cur * 2 + 2] = gray
-            self._visual[x_cur * 2 + 1][y_cur * 2 + 1] = gray
-
-            os.system("clear")
-            self.show_simple()
-            print(f"BFS searching ({i}/{total})")
-            time.sleep(0.02)
-
-        self._show_path = True
-        self.visualize()
-
     def show(self) -> None:
         """
         インタラクティブなメニューを表示してユーザー入力を受け付ける。
@@ -310,17 +268,10 @@ class Visualizer:
             print("2. Show / Hide the shortest path")
             print("3. Rotate the wall colors")
             print("4. Show maze generate animation")
-            print("5. Show bfs animation")
-            print("6. Quit")
-            choice = input("Choice? (1-6): ")
+            print("5. Quit")
+            choice = input("Choice? (1-5): ")
             if choice.isdecimal() and int(choice) == 1:
-                maze: MazeGeneratorBasic
-                if self._config.STRATEGY == "recursive":
-                    maze = MazeGenerator(self._config)
-                elif self._config.STRATEGY == "prims":
-                    maze = MazeGeneratorPrims(self._config)
-                elif self._config.STRATEGY == "kruskals":
-                    maze = MazeGeneratorKruskals(self._config)
+                maze: MazeGeneratorBasic = MazeGenerator(self._config)
                 maze.maze_gen()
                 bfs = BreadthFirstSearch(maze._pos, maze._config)
                 bfs.search_maze()
@@ -328,7 +279,6 @@ class Visualizer:
                 self._pos = maze._pos
                 self._path = bfs._path
                 self._history = maze._history
-                self._history_bfs = bfs._history_bfs
                 self._exist_42 = maze._exist_42
                 self.visualize()
             elif choice.isdecimal() and int(choice) == 2:
@@ -340,11 +290,9 @@ class Visualizer:
             elif choice.isdecimal() and int(choice) == 4:
                 self.show_animation()
             elif choice.isdecimal() and int(choice) == 5:
-                self.show_bfs_animation()
-            elif choice.isdecimal() and int(choice) == 6:
                 return
             else:
-                print("Your choice must be from 1 to 6")
+                print("Your choice must be from 1 to 5")
                 input("Press Enter to continue")
 
     def change_color(self) -> None:
@@ -402,7 +350,7 @@ if __name__ == "__main__":
     print("= ビジュアライズテスト =")
     visualizer = Visualizer(
         bfs._pos, bfs._config, bfs._path, maze._history,
-        bfs._history_bfs, maze._exist_42
+        maze._exist_42
     )
     visualizer.visualize()
     visualizer.show()
