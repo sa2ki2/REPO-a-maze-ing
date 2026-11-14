@@ -1,121 +1,128 @@
-# Review memo
+# レビューメモ
 
-## Review date
+## レビュー日
 
 2026-11-14
 
-## Errors found
+## 発見したエラー
 
-### PERFECT mode did not enforce the 3 x 3 open-space restriction
+### PERFECTモードで3 x 3の開放空間の制限が適用されていなかった
 
-`MazeGenerator.maze_gen()` checked `check_big_space()` only when
-`PERFECT=False`. As a result, `PERFECT=True` could produce a maze containing a
-3 x 3 or larger open space, which violated the mandatory maze restriction.
+`MazeGenerator.maze_gen()`は`PERFECT=False`のときだけ
+`check_big_space()`を実行していました。その結果、`PERFECT=True`では
+3 x 3以上の開放空間を含む迷路が生成される可能性があり、必須の迷路制限に
+違反していました。
 
-Reproduction with a 20 x 15 maze and 100 seeds:
+20 x 15の迷路と100個のシードで再現した結果:
 
 ```text
 PERFECT=False: big_space_failures=[]
 PERFECT=True:  big_space_failures=[6, 9, 26, 29, 50, 61, 97]
 ```
 
-This was fixed by applying the same open-space validation to perfect mazes.
-The generator now retries both modes when a large open space is found.
+この問題は、perfect迷路にも同じ開放空間の検証を適用して修正しました。
+大きな開放空間が見つかった場合、ジェネレーターは両方のモードで再試行します。
 
-### Reachability of the 42 pattern
+### 42パターンの到達可能性
 
-Fully closed cells belonging to the 42 pattern are intentionally allowed to
-be isolated. The project decision is that these decorative 42 cells do not
-need to be reachable; the reachability requirement applies to playable maze
-corridors. The analyzer follows this rule by allowing isolated fully closed
-42 cells while rejecting unreachable normal corridors.
+42パターンに属する完全に閉じたセルは、意図的に孤立していてもよいものと
+しています。プロジェクトの判断として、装飾用の42セルは到達可能である必要は
+なく、到達可能性の要件はプレイ可能な迷路の通路に適用されます。アナライザーも
+このルールに従い、完全に閉じた孤立状態の42セルは許可し、到達不可能な通常の
+通路は拒否します。
 
-## Changes made before this review
+## このレビュー以前に行った変更
 
-- Maze generation was reduced to DFS recursive backtracking.
-- Prim and Kruskal implementations were removed from the active package.
-- Non-perfect mazes remove real dead-ends and pass
-  `--max-dead-ends 0`.
-- BFS remains responsible for shortest-path calculation.
-- BFS animation was removed; maze-generation animation remains.
-- The package was reorganized under `mazegen/`.
-- `config.txt` parsing was made strict:
-  - line-numbered errors
-  - malformed `KEY=VALUE` detection
-  - unknown and duplicate key detection
-  - empty value detection
-  - coordinate, integer, boolean, and range validation
-  - missing-file and invalid-UTF-8 handling
-  - exit status 1 without a traceback
+- 迷路生成をDFSの再帰的バックトラッキングに限定しました。
+- Prim法とKruskal法の実装をアクティブなパッケージから削除しました。
+- non-perfect迷路では実際の行き止まりをなくし、
+  `--max-dead-ends 0`に合格します。
+- BFSは引き続き最短経路の計算を担当します。
+- BFSのアニメーションを削除し、迷路生成のアニメーションは残しました。
+- パッケージを`mazegen/`以下に再編成しました。
+- `config.txt`の解析を厳密化しました:
+  - 行番号付きエラー
+  - 不正な`KEY=VALUE`形式の検出
+  - 不明なキーと重複したキーの検出
+  - 空の値の検出
+  - 座標、整数、真偽値、範囲の検証
+  - ファイル不足と不正なUTF-8の処理
+  - トレースバックを表示せず終了ステータス1を返す
 
-## Verified successfully
+## 検証に成功した項目
 
-- Default configuration runs successfully.
-- Default non-perfect maze passes the analyzer with
-  `--max-dead-ends 0`.
-- Both perfect and non-perfect modes produced no large open space for 100
-  tested seeds after the fix.
-- Configuration error cases return status 1 with detailed messages.
-- flake8 and mypy pass.
-- The wheel builds, installs, and imports successfully.
+- デフォルト設定が正常に実行されます。
+- デフォルトのnon-perfect迷路が、アナライザーの
+  `--max-dead-ends 0`に合格します。
+- 修正後、100個のシードでテストしたperfectモードとnon-perfectモードの
+  どちらでも大きな開放空間は生成されませんでした。
+- 設定エラーの場合、詳細なメッセージとともにステータス1を返します。
+- flake8とmypyに成功しました。
+- wheelのビルド、インストール、インポートに成功しました。
 
-## Code explained simply
+## コードの簡単な説明
 
 ### `a_maze_ing.py`
 
-This is the program's starting point. It reads the configuration file, creates
-the maze, finds the route from the entry to the exit, saves the result, and
-starts the terminal menu. Configuration mistakes are reported here before
-maze generation begins.
+プログラムの開始点です。設定ファイルを読み込み、迷路を作成し、入口から出口
+までの経路を見つけ、結果を保存してからターミナルメニューを開始します。迷路の
+生成を開始する前に、設定ミスをここで報告します。
 
 ### `mazegen/maze_generator.py`
 
-This file defines the settings and the basic maze data. It stores each cell's
-walls, creates the 42 pattern, opens walls between neighbouring cells, checks
-large open spaces, opens the corners and centre for non-perfect mazes, and
-writes the final hexadecimal maze file.
+設定と基本的な迷路データを定義するファイルです。各セルの壁を保持し、42パターン
+を作成し、隣接セル間の壁を開き、大きな開放空間を確認し、non-perfect迷路の
+四隅と中央を開き、最終的な16進数形式の迷路ファイルを書き出します。
 
-For a non-perfect maze, it repeatedly opens one extra wall from every
-dead-end until no real dead-end remains. For both maze types, it rejects a
-result containing a 3 x 3 or larger open space and generates it again.
+non-perfect迷路では、実際の行き止まりがなくなるまで、すべての行き止まりから
+追加の壁を1つずつ繰り返し開きます。どちらの迷路でも、3 x 3以上の開放空間を
+含む結果は拒否して再生成します。
 
 ### `mazegen/maze_gen_recursive.py`
 
-This is the only maze-generation algorithm in the project. It starts at a
-random cell, moves to an unvisited neighbour, and removes the wall between
-the two cells. When it cannot move forward, it goes back to an earlier cell
-and tries another direction. This is depth-first search with backtracking.
+プロジェクトで唯一の迷路生成アルゴリズムです。ランダムなセルから開始し、
+未訪問の隣接セルへ移動して、2つのセルの間の壁を取り除きます。先へ進めなく
+なった場合は、以前のセルへ戻って別の方向を試します。これはバックトラッキング
+付き深さ優先探索です。
 
 ### `mazegen/bfs.py`
 
-This file finds the shortest route. It checks cells in expanding distance
-from the entry, remembers where each cell was reached from, and follows those
-remembered parents backwards from the exit to rebuild the shortest path.
+最短経路を見つけるファイルです。入口から距離が広がる順にセルを調べ、各セルへ
+どこから到達したかを記録し、出口から記録した親セルを逆にたどって最短経路を
+再構築します。
 
 ### `mazegen/visualizer.py`
 
-This file draws the maze in the terminal using coloured ANSI blocks. It also
-provides the menu for regenerating a maze, showing the shortest route,
-changing wall colours, and replaying the maze-generation animation.
+色付きのANSIブロックを使ってターミナルに迷路を描画するファイルです。また、
+迷路の再生成、最短経路の表示、壁の色の変更、迷路生成アニメーションの再生を
+行うメニューも提供します。
 
 ### `maze_analyzer.py`
 
-This is a separate checker for the generated output file. It validates the
-hexadecimal grid, shared-wall consistency, reachability, loops, corners,
-centre, exit, and dead-ends. The `--max-dead-ends 0` option checks the
-no-dead-end condition.
+生成された出力ファイルを検査する独立したチェッカーです。16進数グリッド、
+共有壁の整合性、到達可能性、ループ、四隅、中央、出口、行き止まりを検証します。
+`--max-dead-ends 0`オプションで、行き止まりがない条件を確認します。
 
 ### `config.txt`
 
-This is the user's input file. It contains the maze size, entry and exit,
-output filename, perfect/non-perfect mode, and optional seed.
+ユーザーの入力ファイルです。迷路のサイズ、入口と出口、出力ファイル名、
+perfect/non-perfectモード、任意のシードを指定します。
 
 ### `Makefile`
 
-This provides short commands for installing dependencies, running the
-program, analyzing output, linting, type-checking, and building a wheel.
+依存関係のインストール、プログラムの実行、出力の解析、リンターの実行、
+型チェック、wheelのビルドを行う短いコマンドを提供します。
 
 ### `pyproject.toml`
 
-This describes the Python package, its metadata, required Python version, and
-the dependencies needed to build and use it.
+Pythonパッケージ、そのメタデータ、必要なPythonバージョン、ビルドと使用に
+必要な依存関係を記述します。
+]review: $(VENV) install
+	$(PYTHON) -m build
+	mkdir review
+	cp dist/mazegen-1.0.0-py3-none-any.whl review/
+	cp a_maze_ing.py review/
+	cp config.txt review/
+	python3 -m venv review/.venv
+	review/.venv/bin/pip install review/mazegen-1.0.0-py3-none-any.whl
+	review/.venv/bin/python3 review/a_maze_ing.py review/config.txt
