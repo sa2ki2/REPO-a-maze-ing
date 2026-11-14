@@ -127,7 +127,7 @@ def main() -> None:
     maze.output_to_file(bfs._path_cardinal)
     visualizer = Visualizer(
         bfs._pos, bfs._config, bfs._path,
-        maze._history, maze._exist_42
+        maze._history, bfs._history_bfs, maze._exist_42
     )
     visualizer.visualize()
     visualizer.show()
