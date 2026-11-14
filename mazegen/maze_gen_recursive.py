@@ -13,10 +13,13 @@ class MazeGenerator(MazeGeneratorBasic):
         迷路の生成(recursive backtrack) を実行する。
         """
         while True:
-            start_x = random.randrange(0, self._config.WIDTH)
-            start_y = random.randrange(0, self._config.HEIGHT)
-            start = (int(start_x), int(start_y))
             self.reset()
+            start = (0, 0)
+            while self._pos[start[0]][start[1]].is_42:
+                start = (
+                    random.randrange(0, self._config.WIDTH),
+                    random.randrange(0, self._config.HEIGHT),
+                )
             self._parent: dict[
                 tuple[int, int], tuple[int, int] | None
             ] = {start: None}

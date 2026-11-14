@@ -151,9 +151,20 @@ class MazeGeneratorBasic(ABC):
             cardinal (str): 破壊する壁の方向 ('N', 'E', 'S', 'W')。
 
         Raises:
-            ValueError: 無効な方角が指定された場合。
+            ValueError: 無効な方角、または42固定セルが指定された場合。
         """
         x, y = position
+        target = {
+            "N": (x, y - 1),
+            "E": (x + 1, y),
+            "S": (x, y + 1),
+            "W": (x - 1, y),
+        }.get(cardinal)
+        if target is None:
+            raise ValueError("break_wall(): cardinal should be N, E, S or W")
+        tx, ty = target
+        if self._pos[x][y].is_42 or self._pos[tx][ty].is_42:
+            raise ValueError("break_wall(): 42 cells are immutable")
         if cardinal == "N":
             self._pos[x][y].value -= 8
             self._pos[x][y - 1].value -= 2
@@ -290,6 +301,9 @@ class MazeGeneratorBasic(ABC):
         Returns:
             bool: 壁を破壊した場合はTrue、そうでなければFalse。
         """
+        if self._pos[x][y].is_42:
+            return False
+
         value = self._pos[x][y].value
         open_count = 4 - bin(value).count("1")
         if open_count != 1:
