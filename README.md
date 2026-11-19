@@ -1,5 +1,5 @@
-This project has been created as part
-of the 42 curriculum by *skurita*, *sozawa*.
+*This project has been created as part
+of the 42 curriculum by skurita, sozawa.*
 
 # A-Maze-ing
 
